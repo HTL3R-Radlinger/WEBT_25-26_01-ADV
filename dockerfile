@@ -24,7 +24,7 @@ COPY . /var/www/html/
 
 RUN rm dockerfile
 RUN rm docker-compose.yaml
-RUN rm 01_webt-core-docker.md
+RUN rm 01_webt-adv-ci-cd-mit-github.pdf
 RUN composer install
 
 RUN chown -R www-data:www-data *
