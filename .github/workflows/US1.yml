@@ -25,47 +25,12 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
-      - name: Build Docker image and save to tar
+      - name: Docker
         run: |
           docker build -t mealplan:staging .
-          docker save mealplan:staging -o mealplan.tar
-
-      - name: Copy image + compose file to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          source: |
-            mealplan.tar
-            docker-compose.yaml
-          target: "~/deploy"
-
-      - name: Deploy with docker compose
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          script: |
-            set -e
-            cd ~/deploy
-            echo "Lade Image ins lokale Docker-Registry..."
-            docker load -i mealplan.tar
-            echo "Stoppe alte Container falls vorhanden..."
-            docker compose down || true
-            echo "Starte neue Container..."
-            docker compose up -d --force-recreate
-            echo "Deployment abgeschlossen"
-            rm mealplan.tar
-
-      - name: Fetch container logs for review
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          script: |
-            cd ~/deploy
-            echo "Container-Logs der letzten 50 Zeilen:"
-            docker compose logs --tail=50
+          echo "Stoppe alte Container falls vorhanden..."
+          docker compose down || true
+          echo "Starte neue Container..."
+          docker compose up -d --force-recreate
+          echo "Deployment abgeschlossen"
+          docker compose logs --tail=50
