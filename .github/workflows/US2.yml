@@ -1,0 +1,69 @@
+name: US2
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        id: build
+        run: |
+          docker build -t mealplan:staging . 2>&1 | tee build.log
+        continue-on-error: true
+
+      - name: Deploy to Staging
+        id: deploy
+        run: |
+          echo "Stopping old containers..."
+          docker compose down || true
+          echo "Starting new containers..."
+          docker compose up -d --force-recreate
+          echo "Deployment finished"
+          docker ps -a
+        continue-on-error: true
+
+      - name: Save logs
+        if: failure()
+        run: |
+          echo "BUILD_LOG<<EOF" >> $GITHUB_ENV
+          tail -n 50 build.log >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    if: always()
+    steps:
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "*Build Notification*",
+              "attachments": [
+                {
+                  "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+                  "fields": [
+                    { "title": "Repository", "value": "${{ github.repository }}", "short": true },
+                    { "title": "Workflow", "value": "${{ github.workflow }}", "short": true },
+                    { "title": "Status", "value": "${{ job.status }}", "short": true },
+                    { "title": "Branch", "value": "${{ github.ref_name }}", "short": true },
+                    { "title": "Commit", "value": "${{ github.sha }}", "short": true },
+                    { "title": "Run URL", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "short": false },
+                    { "title": "Timestamp", "value": "${{ github.event.head_commit.timestamp || github.run_started_at }}", "short": false },
+                    { "title": "Error (last 50 lines)", "value": "${{ env.BUILD_LOG || 'Keine Fehler' }}", "short": false }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
