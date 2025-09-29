@@ -22,13 +22,13 @@ WORKDIR /var/www/html/
 
 COPY . /var/www/html/ 
 
-RUN rm -f dockerfile
-RUN rm -f docker-compose.yaml
-RUN rm -f 01_webt-adv-ci-cd-mit-github.pdf
+RUN rm dockerfile
+RUN rm docker-compose.yaml
+RUN rm 01_webt-core-docker.md
 RUN composer install
 
 RUN chown -R www-data:www-data *
 
 ENTRYPOINT ["/usr/sbin/apache2ctl", "-D", "FOREGROUND"]
 
-# docker build -t mealplan:staging .
+# docker build -t mealplan:v1 .

@@ -1,6 +1,7 @@
 services:
   app:
-    image: mealplan:staging
+    container_name: webserver
+    image: mealplan:v1
     ports:
       - 80:80
     volumes:
