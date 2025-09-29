@@ -31,4 +31,4 @@ RUN chown -R www-data:www-data *
 
 ENTRYPOINT ["/usr/sbin/apache2ctl", "-D", "FOREGROUND"]
 
-# docker build -t mealplan:v1 .
+# docker build -t mealplan:staging .
